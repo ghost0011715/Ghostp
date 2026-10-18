@@ -14,7 +14,7 @@ import json
 def main():
     """Main CLI entry point"""
     parser = argparse.ArgumentParser(
-        description="FileScanner with ChatGPT Integration",
+        description="FileScanner",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -35,11 +35,6 @@ Examples:
         "--find-duplicates",
         action="store_true",
         help="Find duplicate files after scanning"
-    )
-    parser.add_argument(
-        "--analyze",
-        action="store_true",
-        help="Analyze files with ChatGPT"
     )
     parser.add_argument(
         "--interactive",
@@ -114,6 +109,7 @@ Examples:
                 print(f"    {ext}: {count} files")
             
             # Find duplicates if requested
+            duplicates = {}
             if args.find_duplicates:
                 print_section("Duplicate Analysis")
                 finder = FileDuplicateFinder()
@@ -148,12 +144,12 @@ Examples:
                 output_data = {
                     "summary": stats,
                     "files": files,
-                    "duplicates": {k: v for k, v in finder.find_duplicates(files).items()} if args.find_duplicates else {}
+                    "duplicates": duplicates,
                 }
                 
                 try:
-                    with open(args.output, 'w') as f:
-                        json.dump(output_data, f, indent=2)
+                    with open(args.output, 'w', encoding='utf-8') as f:
+                        json.dump(output_data, f, indent=2, ensure_ascii=False)
                     print(f"\n✅ Results saved to: {args.output}")
                 except Exception as e:
                     print(f"❌ Error saving to file: {str(e)}")
