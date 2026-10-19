@@ -1,5 +1,7 @@
 import json
 from pathlib import Path
+from subprocess import PIPE, run
+import sys
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 
@@ -20,6 +22,7 @@ class FileScannerTests(TestCase):
 
             self.assertEqual({item["name"] for item in files}, {"a.txt", "b.txt", "image.bin"})
             self.assertEqual(len(scanner.filter_by_extension(files, ["txt"])), 2)
+            self.assertEqual(len(scanner.filter_by_extension(files, [" .TXT "])), 2)
             stats = scanner.get_statistics(files)
             self.assertEqual(stats["total_files"], 3)
             self.assertEqual(stats["by_extension"], {".bin": 1, ".txt": 2})
@@ -31,3 +34,16 @@ class FileScannerTests(TestCase):
                 {"a.txt", "b.txt"},
             )
             json.dumps({"summary": stats, "files": files, "duplicates": duplicate_groups})
+
+    def test_cli_rejects_scan_options_without_a_scan_path(self) -> None:
+        project_root = Path(__file__).resolve().parents[1]
+        result = run(
+            [sys.executable, "cli.py", "--find-duplicates"],
+            cwd=project_root,
+            stdout=PIPE,
+            stderr=PIPE,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("require --scan", result.stderr)

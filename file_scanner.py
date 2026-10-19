@@ -46,9 +46,9 @@ class FileScanner:
     ) -> list[dict[str, Any]]:
         """Keep files whose extension matches one of *extensions*, case-insensitively."""
         allowed = {
-            extension.lower() if extension.startswith(".") else f".{extension.lower()}"
+            normalized if normalized.startswith(".") else f".{normalized}"
             for extension in extensions
-            if extension.strip()
+            if (normalized := extension.strip().lower())
         }
         return [item for item in files if item["extension"].lower() in allowed]
 
@@ -68,9 +68,16 @@ class FileScanner:
 
     def _is_hidden(self, path: Path) -> bool:
         try:
-            return any(part.startswith(".") for part in path.relative_to(self.root).parts)
+            if any(part.startswith(".") for part in path.relative_to(self.root).parts):
+                return True
         except ValueError:
-            return path.name.startswith(".")
+            if path.name.startswith("."):
+                return True
+        try:
+            attributes = getattr(path.stat(), "st_file_attributes", 0)
+            return bool(attributes & 0x2)  # FILE_ATTRIBUTE_HIDDEN on Windows
+        except OSError:
+            return True
 
 
 class FileDuplicateFinder:

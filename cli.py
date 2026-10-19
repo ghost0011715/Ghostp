@@ -25,7 +25,8 @@ Examples:
         """
     )
     
-    parser.add_argument(
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--scan",
         type=str,
         metavar="PATH",
@@ -36,7 +37,7 @@ Examples:
         action="store_true",
         help="Find duplicate files after scanning"
     )
-    parser.add_argument(
+    mode.add_argument(
         "--interactive",
         action="store_true",
         help="Start interactive CLI mode"
@@ -65,6 +66,12 @@ Examples:
     if len(sys.argv) == 1:
         parser.print_help()
         return
+
+    scan_only_options = (
+        args.find_duplicates or args.output or args.filter_ext or args.include_hidden
+    )
+    if not args.scan and scan_only_options:
+        parser.error("--find-duplicates, --output, --filter-ext, and --include-hidden require --scan")
     
     # Interactive mode
     if args.interactive:
@@ -85,8 +92,7 @@ Examples:
             
             # Filter by extension if specified
             if args.filter_ext:
-                extensions = [f".{ext}" if not ext.startswith('.') else ext 
-                             for ext in args.filter_ext.split(',')]
+                extensions = [extension.strip() for extension in args.filter_ext.split(",")]
                 files = scanner.filter_by_extension(files, extensions)
             
             print(f"✅ Found {len(files)} files\n")
